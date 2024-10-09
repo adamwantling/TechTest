@@ -1,0 +1,479 @@
+{
+	"info": {
+		"_postman_id": "2696a159-dfc9-4118-a82b-561ef3e02974",
+		"name": "ENSEK",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17845345"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();\r",
+							"pm.collectionVariables.set(\"bearerToken\", jsonData.access_token);\r",
+							"\r",
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"test\",\r\n  \"password\": \"testing\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/login",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Reset Data",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/reset",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"reset"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Buy Fuel",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Check if fuelId exists, if not set it to 1\r",
+							"if (!pm.collectionVariables.get(\"id\")) {\r",
+							"    pm.collectionVariables.set(\"id\", 1);\r",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"var jsonResponse = pm.response.json();\r",
+							"var message = jsonResponse.message;\r",
+							"var currentFuelId = parseInt(pm.collectionVariables.get(\"id\"));\r",
+							"var quantity = pm.collectionVariables.get(\"quantity\");\r",
+							"var orderIdMatch = message.match(/id is ([a-f0-9\\-]+)/i);\r",
+							"\r",
+							"if (orderIdMatch != null) {\r",
+							"    var orderId = orderIdMatch[1];\r",
+							"\r",
+							"// Get existing orders\r",
+							"var orders = pm.collectionVariables.get(\"orders\");\r",
+							"\r",
+							"if (orders) {\r",
+							"    orders = JSON.parse(orders); \r",
+							"} else {    \r",
+							"    orders = [];\r",
+							"}\r",
+							"\r",
+							"var order = {\r",
+							"    orderId: orderId,\r",
+							"    fuelId: currentFuelId,\r",
+							"    quantity: quantity\r",
+							"};\r",
+							"\r",
+							"orders.push(order);    \r",
+							"\r",
+							"pm.collectionVariables.set(\"orders\", JSON.stringify(orders));     \r",
+							"} else {\r",
+							"    console.log(\"No order id found in the message.\");\r",
+							"}\r",
+							"// Run request until each fuel type has been ordered\r",
+							"if (currentFuelId < 4) {\r",
+							"    pm.collectionVariables.set(\"id\", currentFuelId + 1);  \r",
+							"    pm.execution.setNextRequest(\"Buy Fuel\");   \r",
+							"} else {\r",
+							"    pm.collectionVariables.set(\"id\", 1);     \r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/buy/{{id}}/{{quantity}}",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"buy",
+						"{{id}}",
+						"{{quantity}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Orders",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"const fuelTypeMapping = {\r",
+							"    1: \"gas\",\r",
+							"    2: \"nuclear\",\r",
+							"    3: \"elec\",\r",
+							"    4: \"oil\"\r",
+							"};\r",
+							"\r",
+							"// Get stored orders\r",
+							"let storedOrders = pm.collectionVariables.get(\"orders\");\r",
+							"storedOrders = JSON.parse(storedOrders);\r",
+							"let responseOrders = pm.response.json();\r",
+							"\r",
+							"storedOrders.forEach(storedOrder => {    \r",
+							"    let matchingOrder = responseOrders.find(order => order.id === storedOrder.orderId || order.Id === storedOrder.orderId); \r",
+							"    \r",
+							"    pm.test(`Order ${storedOrder.orderId} exists in the response`, function () {\r",
+							"        pm.expect(matchingOrder).to.not.be.undefined;\r",
+							"    });\r",
+							"    \r",
+							"    if (matchingOrder) {\r",
+							"        \r",
+							"        let expectedFuelType = fuelTypeMapping[storedOrder.fuelId];        \r",
+							"\r",
+							"        pm.test(`Order ${storedOrder.orderId} has the correct fuel type`, function () {\r",
+							"            pm.expect(matchingOrder.fuel.toLowerCase()).to.eql(expectedFuelType.toLowerCase());\r",
+							"        });        \r",
+							"        \r",
+							"        pm.test(`Order ${storedOrder.orderId} has the correct quantity`, function () {\r",
+							"            pm.expect(matchingOrder.quantity).to.eql(Number(storedOrder.quantity));\r",
+							"        });\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"//Check dates on orders\r",
+							"\r",
+							"var today = new Date().setHours(0, 0, 0, 0);\r",
+							"var countBeforeToday = 0;\r",
+							"responseOrders.forEach(function(order) {    \r",
+							"    let datePart = order.time.split(' ').slice(0, 4).join(' ');\r",
+							"    let orderDate = new Date(datePart);\r",
+							"    if (orderDate < today) {\r",
+							"        countBeforeToday++;\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"pm.test(`Number of orders created before the current date is ${countBeforeToday}`, function () {   \r",
+							"});\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/orders",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"orders"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Invalid Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401\", function () {\r",
+							"    pm.response.to.have.status(401);\r",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"username\": \"test1\",\r\n  \"password\": \"testing123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/login",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create New Order",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonResponse = pm.response.json();\r",
+							"var message = jsonResponse.message;\r",
+							"var orderIdMatch = message.match(/id is ([a-f0-9\\-]+)/i);\r",
+							"pm.collectionVariables.set(\"orderToDeleteID\", orderIdMatch[1]);\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/buy/{{id}}/150",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"buy",
+						"{{id}}",
+						"150"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Order",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"//Getting a 500 error with this endpoint - was going to delete an order then get the order list and check it has been deleted.\r",
+							"\r",
+							"\r",
+							"\r",
+							"pm.collectionVariables.unset(\"isCollectionStarted\");"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "https://qacandidatetest.ensek.io/ENSEK/orders/{{orderToDeleteID}}",
+					"protocol": "https",
+					"host": [
+						"qacandidatetest",
+						"ensek",
+						"io"
+					],
+					"path": [
+						"ENSEK",
+						"orders",
+						"{{orderToDeleteID}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"// Clears order list when collection starts\r",
+					"if (!pm.collectionVariables.has(\"isCollectionStarted\")) {\r",
+					"    pm.collectionVariables.unset(\"orders\");    \r",
+					"    pm.collectionVariables.set(\"isCollectionStarted\", true);\r",
+					"}\r",
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "quantity",
+			"value": "100",
+			"type": "string"
+		},
+		{
+			"key": "bearerToken",
+			"value": ""
+		},
+		{
+			"key": "id",
+			"value": ""
+		},
+		{
+			"key": "orderId",
+			"value": ""
+		},
+		{
+			"key": "orderToDeleteID",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "orders",
+			"value": ""
+		}
+	]
+}
